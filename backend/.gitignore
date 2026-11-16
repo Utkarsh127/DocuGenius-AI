@@ -1,0 +1,24 @@
+# Backend Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Node dependencies
+node_modules/
+
+# Logs & Audit files
+logs/
+*.log
+*.log.gz
+*-audit.json
+.audit.json
+.*-audit.json
+
+# Temp files
+temp/
+*.tmp
+
+# Generated Analyzer Exports
+logs_analysis.csv
+logs_analysis.json
+
