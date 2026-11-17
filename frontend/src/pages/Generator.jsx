@@ -94,19 +94,21 @@ export default function Generator() {
   const handlePreview = async () => {
     setErrorMsg('');
     setSuccessMsg('');
+    setPreviewData(null); // Clear previous preview content when a new generation request starts
     const rawPastedText = contentEditableRef.current?.innerText || '';
-    const activeTopic = topic.trim() || title.trim();
+    const cleanTitle = title.trim();
+    const cleanTopic = topic.trim();
 
-    if (!activeTopic && !rawPastedText) {
-      setErrorMsg('Please enter a topic or paste reference text.');
+    if (!cleanTitle && !cleanTopic && !rawPastedText) {
+      setErrorMsg('Please enter a title, topic, or paste reference text.');
       return;
     }
 
     setIsPreviewing(true);
     try {
       const res = await api.post('/generate/preview', {
-        title: title || activeTopic,
-        topic: activeTopic,
+        title: cleanTitle,
+        topic: cleanTopic,
         description: rawPastedText,
         type: docType,
         language,
@@ -119,9 +121,11 @@ export default function Generator() {
         setPreviewData(res.data.data);
         setSuccessMsg('Structured preview generated successfully!');
       } else {
+        setPreviewData(null);
         setErrorMsg(res.data?.message || 'Preview generation failed.');
       }
     } catch (err) {
+      setPreviewData(null);
       setErrorMsg(err.response?.data?.message || err.message || 'Failed to connect to generation service.');
     } finally {
       setIsPreviewing(false);
@@ -132,16 +136,22 @@ export default function Generator() {
   const handleGenerateAndDownload = async () => {
     setErrorMsg('');
     setSuccessMsg('');
+    setPreviewData(null); // Clear previous preview content when a new generation request starts
     const rawPastedText = contentEditableRef.current?.innerText || '';
-    const activeTopic = topic.trim() || title.trim() || 'Untitled Document';
-    const documentTitle = title.trim() || activeTopic;
+    const cleanTitle = title.trim();
+    const cleanTopic = topic.trim();
+
+    if (!cleanTitle && !cleanTopic && !rawPastedText) {
+      setErrorMsg('Please enter a title, topic, or paste reference text.');
+      return;
+    }
 
     setIsGenerating(true);
     try {
       // 1. Request generation
       const genRes = await api.post('/generate', {
-        title: documentTitle,
-        topic: activeTopic,
+        title: cleanTitle,
+        topic: cleanTopic,
         description: rawPastedText,
         type: docType,
         language,

@@ -41,9 +41,12 @@ router.post('/', apiLimiter, async (req, res) => {
   try {
     const { title, topic, description, type, language, tone, audience, contentLength, slideCount, theme } = req.body;
 
+    const resolvedTitle = (title || topic || '').trim();
+    const resolvedTopic = (topic || title || '').trim();
+
     // Validate required fields
-    if (!title || !type) {
-      return res.status(400).json({ success: false, message: 'Title and type are required.' });
+    if (!resolvedTitle && !resolvedTopic && !description) {
+      return res.status(400).json({ success: false, message: 'Title, topic, or reference text is required.' });
     }
     if (!['pptx', 'docx', 'txt'].includes(type)) {
       return res.status(400).json({ success: false, message: 'Type must be pptx, docx, or txt.' });
@@ -64,8 +67,8 @@ router.post('/', apiLimiter, async (req, res) => {
     if (Document) {
       document = await Document.create({
         userId: req.user.id,
-        title,
-        topic: topic || title,
+        title: resolvedTitle,
+        topic: resolvedTopic,
         description,
         type,
         settings: { language, tone, audience, contentLength, slideCount, theme },
@@ -75,7 +78,8 @@ router.post('/', apiLimiter, async (req, res) => {
 
     // Generate AI content
     const structuredContent = await generateContent({
-      topic: topic || title,
+      title: (title || '').trim(),
+      topic: (topic || '').trim(),
       description,
       type,
       language,
@@ -116,7 +120,7 @@ router.post('/', apiLimiter, async (req, res) => {
       success: true,
       data: {
         id: document?._id || fileId,
-        title,
+        title: document?.title || resolvedTitle || structuredContent.title,
         type,
         fileName,
         fileSize: fileBuffer.length,
@@ -151,12 +155,20 @@ router.post('/preview', async (req, res) => {
   try {
     const { title, topic, description, type, language, tone, audience, contentLength } = req.body;
 
+    const resolvedTitle = (title || topic || '').trim();
+    const resolvedTopic = (topic || title || '').trim();
+
+    if (!resolvedTitle && !resolvedTopic && !description) {
+      return res.status(400).json({ success: false, message: 'Valid title, topic, or reference text is required.' });
+    }
+
     if (!type || !['pptx', 'docx', 'txt'].includes(type)) {
       return res.status(400).json({ success: false, message: 'Valid type (pptx/docx/txt) is required.' });
     }
 
     const structuredContent = await generateContent({
-      topic: topic || title || 'Untitled',
+      title: (title || '').trim(),
+      topic: (topic || '').trim(),
       description,
       type,
       language,
@@ -195,8 +207,18 @@ router.post('/:id/regenerate', async (req, res) => {
     const { title, topic, description, type } = original;
     const settings = original.settings || {};
 
+    const cleanTitle = (title || '').trim();
+    const cleanTopic = (topic || '').trim();
+    const isGenericTitle = !cleanTitle || /^(untitled presentation|untitled document|document title|presentation title)$/i.test(cleanTitle);
+
+    // Resolve clean title and topic for generation:
+    // Prevent generic placeholder titles or duplicate title===topic from distorting prompt semantics
+    const titleForGen = (isGenericTitle || cleanTitle === cleanTopic) ? '' : cleanTitle;
+    const topicForGen = cleanTopic || cleanTitle;
+
     const structuredContent = await generateContent({
-      topic: topic || title,
+      title: titleForGen,
+      topic: topicForGen,
       description,
       type,
       language: settings.language,
