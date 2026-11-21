@@ -97,7 +97,7 @@ export default function Dashboard() {
             Welcome back, {user?.name || 'Creator'}
           </h1>
           <p className="text-sm text-blue-100/90 leading-relaxed">
-            Create presentations, Word reports, and structured documents powered by Gemini & LangChain.
+            Create presentations, Word reports, and structured documents powered by Gemini.
           </p>
         </div>
 

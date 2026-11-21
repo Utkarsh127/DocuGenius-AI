@@ -14,7 +14,7 @@ export default function Footer() {
           </div>
 
           <p className="text-xs text-slate-500">
-            Powered by Google Gemini & LangChain • PptxGenJS • Docx Library
+            Powered by Google Gemini • PptxGenJS • Docx Library
           </p>
 
           <div className="flex items-center space-x-6 text-xs text-slate-500">
